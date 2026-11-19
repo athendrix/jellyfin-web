@@ -1,0 +1,36 @@
+name: Fork rebuild server container
+
+# Asks the server fork to rebuild its container image, which includes this web client, after every push to
+# master.
+#
+# Needs a repository secret CONTAINER_DISPATCH_TOKEN: a fine-grained personal access token with access to the
+# server repository (<owner>/jellyfin) and the "Contents: Read and write" permission, which repository_dispatch
+# requires. Without it, this workflow does nothing and the image is rebuilt on the next server push or by running
+# the server's "Fork container image" workflow by hand.
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the server container build
+        env:
+          TOKEN: ${{ secrets.CONTAINER_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::CONTAINER_DISPATCH_TOKEN is not set; run the server's container workflow by hand to pick up this change."
+            exit 0
+          fi
+          curl --fail-with-body -sS -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $TOKEN" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY_OWNER}/jellyfin/dispatches" \
+            -d "{\"event_type\":\"web-updated\",\"client_payload\":{\"ref\":\"${GITHUB_SHA}\"}}"
