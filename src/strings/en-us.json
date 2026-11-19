@@ -1511,6 +1511,7 @@
     "QuickConnect": "Quick Connect",
     "QuickConnectActivationSuccessful": "Successfully activated",
     "QuickConnectAuthorizeCode": "Enter code {0} to login",
+    "QuickConnectApproveInBrowser": "Your browser is opening. Sign in there if asked, then tap Authorize for code {0}. This app signs in by itself afterwards.",
     "QuickConnectAuthorizeFail": "Unknown Quick Connect code",
     "QuickConnectAuthorizeSuccess": "You have successfully authenticated your device!",
     "QuickConnectDeactivated": "Quick Connect was deactivated before the login request could be approved",

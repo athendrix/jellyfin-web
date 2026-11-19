@@ -19,13 +19,14 @@ import globalize from 'lib/globalize';
 import 'components/cardbuilder/card.scss';
 import 'elements/emby-checkbox/emby-checkbox';
 import Dashboard from 'utils/dashboard';
+import shell from 'scripts/shell';
 import toast from 'components/toast/toast';
 import dialogHelper from 'components/dialogHelper/dialogHelper';
 import baseAlert from 'components/alert';
 import { getDefaultBackgroundClass } from 'components/cardbuilder/utils/builder';
 import { queryClient } from '@/utils/query/queryClient';
 
-import { clearOidcParams, consumePendingLogin, getOidcConfig, getOidcErrorMessage, redeemOidcCode, startOidcLogin } from './oidc';
+import { clearOidcParams, consumePendingLogin, consumeReturnUrl, getOidcConfig, getOidcErrorMessage, redeemOidcCode, startOidcLogin } from './oidc';
 import './login.scss';
 
 const domPurify = createDOMPurify();
@@ -71,7 +72,7 @@ async function authenticateUserByName(page, serverId, url, username, password) {
  * @param {string|undefined} serverId The server ID to authenticate against
  * @param {string} targetUrl The URL to redirect to after authentication
  */
-async function authenticateQuickConnect(serverId, targetUrl) {
+async function authenticateQuickConnect(serverId, targetUrl, approveInBrowser = false) {
     const api = ServerConnections.getApi(serverId);
     const authenticationApi = getAuthenticationApi(api);
 
@@ -88,8 +89,13 @@ async function authenticateQuickConnect(serverId, targetUrl) {
                 id: 'quickConnectAlert'
             },
             title: globalize.translate('QuickConnect'),
-            text: globalize.translate('QuickConnectAuthorizeCode', data.Code)
+            text: globalize.translate(approveInBrowser ? 'QuickConnectApproveInBrowser' : 'QuickConnectAuthorizeCode', data.Code)
         }).catch(() => { /* dialog closed */ });
+
+        if (approveInBrowser) {
+            // Opens the system browser on the Quick Connect page with the code filled in; it signs in first if needed.
+            shell.openUrl(`${api.basePath}/web/#/quickconnect?code=${encodeURIComponent(data.Code)}`);
+        }
 
         const interval = setInterval(async () => {
             try {
@@ -289,8 +295,15 @@ export default function (view, params) {
         Dashboard.selectServer();
     });
     view.querySelector('.btnOidc').addEventListener('click', function () {
+        // The Android app cannot complete a sign-in inside itself: sign in with Quick Connect, approved in the
+        // phone's browser after signing in there with the identity provider.
+        if (window.NativeInterface) {
+            authenticateQuickConnect(params.serverid, getTargetUrl(), true);
+            return;
+        }
+
         loading.show();
-        startOidcLogin(ServerConnections.getApi(params.serverid));
+        startOidcLogin(ServerConnections.getApi(params.serverid), getTargetUrl());
     });
 
     // The one-time code of a completed login can only be redeemed once.
@@ -328,7 +341,7 @@ export default function (view, params) {
 
         try {
             const result = await redeemOidcCode(api, code);
-            await onLoginSuccessful(result, getTargetUrl());
+            await onLoginSuccessful(result, consumeReturnUrl() || getTargetUrl());
             return true;
         } catch (error) {
             console.error('[OIDC] unable to complete the login', error);

@@ -4,7 +4,7 @@ vi.mock('lib/globalize', () => ({
     default: { translate: (key) => key }
 }));
 
-import { consumePendingLogin, getOidcConfig, getOidcErrorMessage, redeemOidcCode, startOidcLogin } from 'apps/legacy/controllers/session/login/oidc';
+import { consumePendingLogin, consumeReturnUrl, getOidcConfig, getOidcErrorMessage, redeemOidcCode, startOidcLogin } from 'apps/legacy/controllers/session/login/oidc';
 
 function createApi(overrides = {}) {
     return {
@@ -70,6 +70,24 @@ describe('OIDC login helpers', () => {
         startOidcLogin(createApi());
         expect(consumePendingLogin()).toBe(true);
         expect(consumePendingLogin()).toBe(false);
+    });
+
+    it('remembers an in-app page to return to after the login, once', () => {
+        Object.defineProperty(window, 'location', { configurable: true, value: { href: '' } });
+
+        startOidcLogin(createApi(), '/quickconnect?code=123456');
+        expect(consumeReturnUrl()).toBe('/quickconnect?code=123456');
+        expect(consumeReturnUrl()).toBeNull();
+    });
+
+    it('never returns to another site', () => {
+        Object.defineProperty(window, 'location', { configurable: true, value: { href: '' } });
+
+        // eslint-disable-next-line sonarjs/code-eval -- the test checks that this URL is refused
+        for (const url of [ 'https://evil.example.com', '//evil.example.com', '/\\evil.example.com', 'javascript:alert(1)' ]) {
+            startOidcLogin(createApi(), url);
+            expect(consumeReturnUrl()).toBeNull();
+        }
     });
 
     it('redeems the code with the device authorization header', async () => {

@@ -6,6 +6,7 @@
 import globalize from 'lib/globalize';
 
 const PendingLoginKey = 'oidcLoginPending';
+const ReturnUrlKey = 'oidcReturnUrl';
 
 const ErrorMessages = {
     ProviderError: 'OidcErrorProviderError',
@@ -46,8 +47,19 @@ export async function getOidcConfig(api) {
 /**
  * Sends the browser to the identity provider. The server sends it back to the login page when done.
  * @param {import('@jellyfin/sdk').Api} api The API of the server.
+ * @param {string} [returnUrl] The page to show after the login (an in-app path), such as the Quick Connect page.
  */
-export function startOidcLogin(api) {
+export function startOidcLogin(api, returnUrl) {
+    try {
+        if (isAppPath(returnUrl)) {
+            window.sessionStorage.setItem(ReturnUrlKey, returnUrl);
+        } else {
+            window.sessionStorage.removeItem(ReturnUrlKey);
+        }
+    } catch (error) {
+        console.debug('[OIDC] unable to remember the return page', error);
+    }
+
     const url = api.getUri('/Oidc/Start', {
         deviceId: api.deviceInfo.id,
         deviceName: api.deviceInfo.name,
@@ -96,6 +108,30 @@ export async function redeemOidcCode(api, code) {
         { headers: { Authorization: api.authorizationHeader } }
     );
     return data;
+}
+
+/**
+ * Gets, and forgets, the page to show after the login, if one was remembered when it started.
+ * @returns {string|null} An in-app path.
+ */
+export function consumeReturnUrl() {
+    try {
+        const url = window.sessionStorage.getItem(ReturnUrlKey);
+        window.sessionStorage.removeItem(ReturnUrlKey);
+        return isAppPath(url) ? url : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Whether a URL is a path inside the app, so it cannot send the browser to another site.
+ * @param {string|null|undefined} url The URL.
+ * @returns {boolean} _true_ for paths such as "/quickconnect?code=123456".
+ */
+function isAppPath(url) {
+    return typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') && !url.includes('\\')
+        && [ ...url ].every(c => c.charCodeAt(0) >= 0x20);
 }
 
 /**
