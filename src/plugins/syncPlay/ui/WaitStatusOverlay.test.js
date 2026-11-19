@@ -35,7 +35,6 @@ describe('WaitStatusOverlay', () => {
 
     it('renders one progress row per member and keeps names as text', () => {
         const manager = createManager();
-        // eslint-disable-next-line sonarjs/constructor-for-side-effects
         new WaitStatusOverlay(manager);
 
         Events.trigger(manager, 'wait-status', [waitingStatus([
