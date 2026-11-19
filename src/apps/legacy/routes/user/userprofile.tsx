@@ -15,6 +15,7 @@ import UserPasswordForm from 'components/dashboard/users/UserPasswordForm';
 import Page from 'components/Page';
 import Loading from 'components/loading/LoadingComponent';
 import Button from 'elements/emby-button/Button';
+import { getUserDisplayName } from 'utils/userDisplayName';
 
 const USER_IMAGE_PLACEHOLDER = 'assets/img/avatar.png';
 
@@ -39,7 +40,7 @@ const UserProfile: FunctionComponent = () => {
             throw new Error('Unexpected null user name or id');
         }
 
-        void libraryMenu.then(menu => menu.setTitle(user.Name));
+        void libraryMenu.then(menu => menu.setTitle(getUserDisplayName(user)));
 
         let imageUrl = USER_IMAGE_PLACEHOLDER;
         if (api) {
@@ -207,7 +208,7 @@ const UserProfile: FunctionComponent = () => {
                     </div>
                     <div style={{ verticalAlign: 'top', margin: '1em 2em', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <h2 className='username' style={{ margin: 0, fontSize: 'xx-large' }}>
-                            {user?.Name}
+                            {getUserDisplayName(user)}
                         </h2>
                         <br />
                         <Button

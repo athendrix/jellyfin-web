@@ -5,6 +5,7 @@ import Avatar, { type AvatarProps } from '@mui/material/Avatar';
 import type {} from '@mui/material/themeCssVarsAugmentation';
 
 import { useApi } from 'hooks/useApi';
+import { getUserDisplayName } from 'utils/userDisplayName';
 
 interface UserAvatarProps extends AvatarProps {
     user?: UserDto,
@@ -20,7 +21,7 @@ const UserAvatar: FC<UserAvatarProps> = ({
 
     return user ? (
         <Avatar
-            alt={user.Name ?? undefined}
+            alt={getUserDisplayName(user)}
             src={imageUrl}
             sx={(theme) => ({
                 bgcolor: imageUrl ?

@@ -11,6 +11,7 @@ import { pluginManager } from '../../../components/pluginManager';
 import Events from '../../../utils/events.ts';
 
 import './groupSelectionMenu.scss';
+import { getUserDisplayName } from '../../../utils/userDisplayName';
 
 /**
  * Class that manages the SyncPlay group selection menu.
@@ -88,7 +89,7 @@ class GroupSelectionMenu {
                 actionsheet.show(menuOptions).then(function (id) {
                     if (id == 'new-group') {
                         apiClient.createSyncPlayGroup({
-                            GroupName: globalize.translate('SyncPlayGroupDefaultTitle', user.localUser.Name)
+                            GroupName: globalize.translate('SyncPlayGroupDefaultTitle', getUserDisplayName(user.localUser))
                         });
                     } else if (id) {
                         apiClient.joinSyncPlayGroup({

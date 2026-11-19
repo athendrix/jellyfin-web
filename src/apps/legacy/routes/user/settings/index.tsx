@@ -16,6 +16,7 @@ import browser from 'scripts/browser';
 import Dashboard from 'utils/dashboard';
 import shell from 'scripts/shell';
 import keyboardNavigation from 'scripts/keyboardNavigation';
+import { getUserDisplayName } from 'utils/userDisplayName';
 
 const UserSettingsPage: FC = () => {
     const { user: currentUser } = useApi();
@@ -71,7 +72,7 @@ const UserSettingsPage: FC = () => {
                                 paddingLeft: '0.25em'
                             }}
                         >
-                            {user.Name}
+                            {getUserDisplayName(user)}
                         </h2>
 
                         <LinkButton

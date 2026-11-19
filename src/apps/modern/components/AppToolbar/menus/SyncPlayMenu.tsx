@@ -25,6 +25,7 @@ import { useSyncPlay } from 'apps/modern/features/syncPlay/hooks/useSyncPlay';
 import { useApi } from 'hooks/useApi';
 import globalize from 'lib/globalize';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
+import { getUserDisplayName } from 'utils/userDisplayName';
 
 export const ID = 'app-sync-play-menu';
 
@@ -58,7 +59,7 @@ const SyncPlayMenu: FC<SyncPlayMenuProps> = ({
     const onGroupAddClick = useCallback(() => {
         createSyncPlayGroup.mutate({
             newGroupRequestDto: {
-                GroupName: globalize.translate('SyncPlayGroupDefaultTitle', user?.Name ?? '')
+                GroupName: globalize.translate('SyncPlayGroupDefaultTitle', getUserDisplayName(user) ?? '')
             }
         }, {
             onSettled: onMenuClose

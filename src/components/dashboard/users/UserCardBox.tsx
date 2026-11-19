@@ -9,6 +9,7 @@ import IconButtonElement from '../../../elements/IconButtonElement';
 import LinkButton from '../../../elements/emby-button/LinkButton';
 import { getDefaultBackgroundClass } from '../../cardbuilder/utils/builder';
 import { useApi } from 'hooks/useApi';
+import { getUserDisplayName } from 'utils/userDisplayName';
 
 type IProps = {
     user?: UserDto;
@@ -23,6 +24,7 @@ const getLastSeenText = (lastActivityDate?: string | null) => {
 };
 
 const UserCardBox: FunctionComponent<IProps> = ({ user = {} }: IProps) => {
+    const displayName = getUserDisplayName(user);
     const { api } = useApi();
 
     let cssClass = 'card squareCard scalableCard squareCard-scalable';
@@ -76,6 +78,11 @@ const UserCardBox: FunctionComponent<IProps> = ({ user = {} }: IProps) => {
                     <div className='cardText'>
                         <span>{user.Name}</span>
                     </div>
+                    {displayName && displayName !== user.Name && (
+                        <div className='cardText cardText-secondary'>
+                            <span>{displayName}</span>
+                        </div>
+                    )}
                     <div className='cardText cardText-secondary'>
                         <span>{lastSeen != '' ? lastSeen : ''}</span>
                     </div>
