@@ -16,6 +16,7 @@ import { useChannels } from 'apps/dashboard/features/users/api/useChannels';
 import { useUpdateUserPolicy } from 'apps/dashboard/features/users/api/useUpdateUserPolicy';
 import { useCreateUser } from 'apps/dashboard/features/users/api/useCreateUser';
 import { useNavigate } from 'react-router-dom';
+import { useOidcConfig } from 'hooks/useOidcConfig';
 
 type ItemsArr = {
     Name?: string | null;
@@ -23,6 +24,7 @@ type ItemsArr = {
 };
 
 const UserNew = () => {
+    const { data: oidcConfig } = useOidcConfig();
     const navigate = useNavigate();
     const [ channelsItems, setChannelsItems ] = useState<ItemsArr[]>([]);
     const [ mediaFoldersItems, setMediaFoldersItems ] = useState<ItemsArr[]>([]);
@@ -239,7 +241,8 @@ const UserNew = () => {
                             {globalize.translate('LabelUsernameAllowedCharactersHelp')}
                         </div>
                     </div>
-                    <div className='inputContainer'>
+                    {/* Hidden rather than removed: the form reads the field when saving. */}
+                    <div className={oidcConfig && !oidcConfig.PasswordLoginEnabled ? 'inputContainer hide' : 'inputContainer'}>
                         <Input
                             type='password'
                             id='txtPassword'

@@ -10,12 +10,13 @@ import toast from '../../toast/toast';
 import Button from '../../../elements/emby-button/Button';
 import Input from '../../../elements/emby-input/Input';
 import { useApi } from 'hooks/useApi';
+import { useOidcConfig } from 'hooks/useOidcConfig';
 
 type UserPasswordFormProps = {
     user: UserDto
 };
 
-const UserPasswordForm: FunctionComponent<UserPasswordFormProps> = ({ user }) => {
+const PasswordForm: FunctionComponent<UserPasswordFormProps> = ({ user }) => {
     const { api, user: currentUser } = useApi();
     const element = useRef<HTMLDivElement>(null);
     const libraryMenu = useMemo(async () => ((await import('../../../scripts/libraryMenu')).default), []);
@@ -201,6 +202,27 @@ const UserPasswordForm: FunctionComponent<UserPasswordFormProps> = ({ user }) =>
             </form>
         </div>
     );
+};
+
+/**
+ * The password form, or a note when the server has no passwords because users sign in with single sign-on.
+ */
+const UserPasswordForm: FunctionComponent<UserPasswordFormProps> = ({ user }) => {
+    const { data: oidcConfig, isPending } = useOidcConfig();
+
+    if (isPending) {
+        return null;
+    }
+
+    if (oidcConfig && !oidcConfig.PasswordLoginEnabled) {
+        return (
+            <div className='fieldDescription' style={{ margin: '0 auto 2em' }}>
+                {globalize.translate('MessagePasswordsDisabledOidc', oidcConfig.ProviderName || 'SSO')}
+            </div>
+        );
+    }
+
+    return <PasswordForm user={user} />;
 };
 
 export default UserPasswordForm;
