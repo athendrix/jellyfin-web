@@ -40,6 +40,7 @@ class Manager {
         this.followingGroupPlayback = true; // Follow or ignore group playback.
         this.lastPlaybackCommand = null; // Last received playback command from server, tracks state of group.
         this.waitStatus = null; // Last received wait status, tells who the group is waiting for.
+        this.rejoinAttempted = false; // Whether we already tried to get back into a group the server dropped us from.
 
         this.currentPlayer = null;
         this.playerWrapper = null;
@@ -230,6 +231,7 @@ class Manager {
                 Events.trigger(this, 'group-update', [{ ...this.groupInfo }]);
                 break;
             case 'GroupJoined':
+                this.rejoinAttempted = false;
                 cmd.Data.LastUpdatedAt = new Date(cmd.Data.LastUpdatedAt);
                 this.enableSyncPlay(apiClient, cmd.Data, true);
                 Events.trigger(this, 'group-update', [ cmd.Data ]);
@@ -238,7 +240,24 @@ class Manager {
                 toast(globalize.translate('MessageSyncPlayIsDisabled'));
                 break;
             case 'NotInGroup':
+                // The server no longer has this client in the group although it never left it, for example
+                // after a long disconnection. Try to get back in once before giving up.
+                if (this.isSyncPlayEnabled() && this.groupInfo?.GroupId && !this.rejoinAttempted) {
+                    this.rejoinAttempted = true;
+                    console.warn('[SyncPlay.Manager] removed from the group by the server, rejoining', this.groupInfo.GroupId);
+                    apiClient.joinSyncPlayGroup({ GroupId: this.groupInfo.GroupId }).catch((error) => {
+                        console.error('[SyncPlay.Manager] unable to rejoin the group', error);
+                        this.disableSyncPlay(true);
+                        Events.trigger(this, 'group-update', []);
+                    });
+                    break;
+                }
+
+                this.disableSyncPlay(true);
+                Events.trigger(this, 'group-update', []);
+                break;
             case 'GroupLeft':
+                this.rejoinAttempted = false;
                 this.disableSyncPlay(true);
                 Events.trigger(this, 'group-update', []);
                 break;
@@ -259,6 +278,12 @@ class Manager {
                 break;
             case 'GroupDoesNotExist':
                 toast(globalize.translate('MessageSyncPlayGroupDoesNotExist'));
+                if (this.rejoinAttempted && this.isSyncPlayEnabled()) {
+                    // The group we tried to get back into is gone (for example, the server restarted).
+                    this.rejoinAttempted = false;
+                    this.disableSyncPlay(true);
+                    Events.trigger(this, 'group-update', []);
+                }
                 break;
             case 'CreateGroupDenied':
                 toast(globalize.translate('MessageSyncPlayCreateGroupDenied'));
