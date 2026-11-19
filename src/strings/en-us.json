@@ -1405,6 +1405,7 @@
     "OidcErrorGeneric": "Sign-in failed. Please try again.",
     "OidcErrorInvalidState": "The sign-in expired or was started in another window. Please try again.",
     "OidcErrorInvalidUsername": "Your account name cannot be used on this server. Contact the server administrator.",
+    "OidcErrorMissingUsername": "The identity provider did not send a user name for your account. Contact the server administrator.",
     "OidcErrorProviderError": "Sign-in was cancelled or refused by the identity provider.",
     "OidcErrorProviderUnavailable": "The identity provider could not be reached. Please try again later.",
     "OptionWeekly": "Weekly",

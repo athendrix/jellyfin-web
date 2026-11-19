@@ -12,7 +12,7 @@ const ErrorMessages = {
     ProviderUnavailable: 'OidcErrorProviderUnavailable',
     InvalidState: 'OidcErrorInvalidState',
     AccessDenied: 'OidcErrorAccessDenied',
-    MissingUsername: 'OidcErrorInvalidUsername',
+    MissingUsername: 'OidcErrorMissingUsername',
     InvalidUsername: 'OidcErrorInvalidUsername'
 };
 
