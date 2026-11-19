@@ -13,6 +13,7 @@ import { ConnectionState } from './connectionState';
 import { toApi, updateApiClientSdk } from './utils/compat';
 import { createApiClient } from './utils/createApiClient';
 import getServerAddress from './utils/getServerAddress';
+import { getUserDisplayName } from '../../utils/userDisplayName';
 
 const DEFAULT_CONNECTION_TIMEOUT = 20000;
 
@@ -276,7 +277,7 @@ export default class ConnectionManager {
 
                             resolve({
                                 localUser,
-                                name: localUser ? localUser.Name : null,
+                                name: localUser ? getUserDisplayName(localUser) : null,
                                 imageUrl: image.url,
                                 supportsImageParams: image.supportsParams
                             });

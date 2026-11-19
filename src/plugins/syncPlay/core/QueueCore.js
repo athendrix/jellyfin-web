@@ -10,6 +10,11 @@ import * as Helper from './Helper';
 /**
  * Class that manages the queue of SyncPlay.
  */
+/**
+ * The longest time to wait for the media to open, in milliseconds, before giving up on the group.
+ */
+const MaxLoadingTime = 10 * 60 * 1000;
+
 class QueueCore {
     constructor() {
         this.manager = null;
@@ -180,7 +185,9 @@ class QueueCore {
         const reporter = this.manager.getLoadProgressReporter();
         reporter.start('Loading');
 
-        Helper.waitForEventOnce(this.manager, 'playbackstart', undefined, ['playbackerror']).then(async () => {
+        // Gives up when the player is closed before the media opens, or after a very long time, so that this
+        // client does not keep the group waiting while it is not loading anything anymore.
+        Helper.waitForEventOnce(this.manager, 'playbackstart', MaxLoadingTime, ['playbackerror', 'playbackstop']).then(async () => {
             if (this.pendingReadyToken !== token) {
                 console.debug('SyncPlay scheduleReadyRequestOnPlaybackStart: superseded, ignoring playback start.', origin);
                 return;

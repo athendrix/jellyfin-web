@@ -125,7 +125,10 @@ const UserNew = () => {
         const saveUser = () => {
             const userInput: CreateUserByName = {
                 Name: (page.querySelector('#txtUsername') as HTMLInputElement).value,
-                Password: (page.querySelector('#txtPassword') as HTMLInputElement).value
+                // Not sent when the server has no passwords, even if a password manager filled the hidden field.
+                Password: oidcConfig?.PasswordLoginEnabled === true ?
+                    (page.querySelector('#txtPassword') as HTMLInputElement).value :
+                    undefined
             };
             createUser.mutate({ createUserByName: userInput }, {
                 onSuccess: (response) => {
@@ -210,7 +213,7 @@ const UserNew = () => {
             (page.querySelector('.newUserProfileForm') as HTMLFormElement).removeEventListener('submit', onSubmit);
             (page.querySelector('#btnCancel') as HTMLButtonElement).removeEventListener('click', onCancelClick);
         };
-    }, [loadUser, createUser, updateUserPolicy, navigate]);
+    }, [loadUser, createUser, updateUserPolicy, navigate, oidcConfig]);
 
     return (
         <Page

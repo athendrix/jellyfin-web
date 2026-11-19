@@ -86,5 +86,7 @@ describe('OIDC login helpers', () => {
     it('maps unknown errors to a generic message', () => {
         expect(getOidcErrorMessage('AccessDenied')).toBe('OidcErrorAccessDenied');
         expect(getOidcErrorMessage('<script>')).toBe('OidcErrorGeneric');
+        expect(getOidcErrorMessage('constructor')).toBe('OidcErrorGeneric');
+        expect(getOidcErrorMessage('__proto__')).toBe('OidcErrorGeneric');
     });
 });

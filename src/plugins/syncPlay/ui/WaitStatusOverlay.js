@@ -194,9 +194,9 @@ class WaitStatusOverlay {
         } else if (member.IsStalled) {
             stageText = globalize.translate('SyncPlayWaitStageNotResponding');
         } else {
-            stageText = globalize.translate(StageStrings[member.Stage] || StageStrings.Unknown);
-            if (typeof member.Progress === 'number') {
-                stageText += ` ${Math.round(member.Progress * 100)}%`;
+            stageText = globalize.translate(Object.hasOwn(StageStrings, member.Stage) ? StageStrings[member.Stage] : StageStrings.Unknown);
+            if (typeof member.Progress === 'number' && isFinite(member.Progress)) {
+                stageText += ` ${Math.round(Math.min(1, Math.max(0, member.Progress)) * 100)}%`;
             }
         }
         const stage = createElement('span', 'syncPlayWaitStatus-stage', stageText);
@@ -208,8 +208,8 @@ class WaitStatusOverlay {
         const fill = createElement('div', 'syncPlayWaitStatus-barFill');
         if (member.IsReady) {
             fill.style.width = '100%';
-        } else if (typeof member.Progress === 'number') {
-            fill.style.width = `${Math.round(member.Progress * 100)}%`;
+        } else if (typeof member.Progress === 'number' && isFinite(member.Progress)) {
+            fill.style.width = `${Math.round(Math.min(1, Math.max(0, member.Progress)) * 100)}%`;
         } else if (!member.IsStalled && !member.IsIgnoringWait) {
             bar.classList.add('syncPlayWaitStatus-indeterminate');
         } else {
@@ -217,10 +217,10 @@ class WaitStatusOverlay {
         }
         bar.setAttribute('role', 'progressbar');
         bar.setAttribute('aria-label', member.UserName || '');
-        if (typeof member.Progress === 'number' || member.IsReady) {
+        if ((typeof member.Progress === 'number' && isFinite(member.Progress)) || member.IsReady) {
             bar.setAttribute('aria-valuemin', '0');
             bar.setAttribute('aria-valuemax', '100');
-            bar.setAttribute('aria-valuenow', String(member.IsReady ? 100 : Math.round(member.Progress * 100)));
+            bar.setAttribute('aria-valuenow', String(member.IsReady ? 100 : Math.round(Math.min(1, Math.max(0, member.Progress)) * 100)));
         }
         bar.appendChild(fill);
 

@@ -396,6 +396,7 @@ class PlaybackCore {
         const seekToken = {};
         this.pendingSeekToken = seekToken;
 
+        let seekAttempts = 0;
         const waitForReady = () => {
             Helper.waitForEventOnce(this.manager, 'ready', Helper.WaitForEventDefaultTimeout).then(() => {
                 if (this.pendingSeekToken !== seekToken) return;
@@ -404,6 +405,16 @@ class PlaybackCore {
                 this.sendBufferingRequest(false);
             }).catch((error) => {
                 if (this.pendingSeekToken !== seekToken) return;
+
+                // The player went away, or kept failing to get there: stop holding the group.
+                seekAttempts++;
+                if (!this.manager.isPlaybackActive() || seekAttempts >= 10) {
+                    console.error(`Giving up on seeking to ${positionTicks}.`, error);
+                    this.pendingSeekToken = null;
+                    this.manager.haltGroupPlayback(this.manager.getApiClient());
+                    return;
+                }
+
                 // Still not ready: seek again and keep waiting. The group sees our progress meanwhile,
                 // and must not wait for a ready request that would otherwise never be sent.
                 console.warn(`Timed out while waiting for 'ready' event! Seeking to ${positionTicks} again.`, error);

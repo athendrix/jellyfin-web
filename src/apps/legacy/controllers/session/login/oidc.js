@@ -104,7 +104,8 @@ export async function redeemOidcCode(api, code) {
  * @returns {string} The translated message.
  */
 export function getOidcErrorMessage(error) {
-    return globalize.translate(ErrorMessages[error] || 'OidcErrorGeneric');
+    // Own properties only: an error code such as "constructor" must not resolve to a built-in.
+    return globalize.translate(Object.hasOwn(ErrorMessages, error) ? ErrorMessages[error] : 'OidcErrorGeneric');
 }
 
 /**

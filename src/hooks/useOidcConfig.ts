@@ -8,7 +8,7 @@ import { useApi } from './useApi';
 export const getOidcConfigQuery = (
     api?: Api
 ) => queryOptions({
-    queryKey: [ 'Oidc', 'Config' ],
+    queryKey: [ 'Oidc', 'Config', api?.basePath ],
     queryFn: () => getOidcConfig(api!),
     enabled: !!api,
     staleTime: 5 * 60 * 1000

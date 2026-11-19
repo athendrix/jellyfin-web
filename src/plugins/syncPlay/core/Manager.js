@@ -289,10 +289,14 @@ class Manager {
                 toast(globalize.translate('MessageSyncPlayCreateGroupDenied'));
                 break;
             case 'JoinGroupDenied':
-                toast(globalize.translate('MessageSyncPlayJoinGroupDenied'));
-                break;
             case 'LibraryAccessDenied':
-                toast(globalize.translate('MessageSyncPlayLibraryAccessDenied'));
+                toast(globalize.translate(cmd.Type === 'JoinGroupDenied' ? 'MessageSyncPlayJoinGroupDenied' : 'MessageSyncPlayLibraryAccessDenied'));
+                if (this.rejoinAttempted && this.isSyncPlayEnabled()) {
+                    // We could not get back into the group we were in.
+                    this.rejoinAttempted = false;
+                    this.disableSyncPlay(true);
+                    Events.trigger(this, 'group-update', []);
+                }
                 break;
             default:
                 console.error(`[SyncPlay.Manager] processGroupUpdate: command ${cmd.Type} not recognised.`);

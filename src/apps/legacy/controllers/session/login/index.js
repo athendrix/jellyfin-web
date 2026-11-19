@@ -299,6 +299,8 @@ export default function (view, params) {
     async function completeOidcLogin(api) {
         if (params.oidcError) {
             const error = params.oidcError;
+            // Handled once: a cached view shown again must not repeat it.
+            delete params.oidcError;
             consumePendingLogin();
             clearOidcParams(params.serverid);
             Dashboard.alert({
@@ -314,6 +316,7 @@ export default function (view, params) {
 
         oidcCodeHandled = true;
         const code = params.oidcCode;
+        delete params.oidcCode;
         clearOidcParams(params.serverid);
 
         // Only accept the result of a login started from this tab. Otherwise a link carrying somebody else's
