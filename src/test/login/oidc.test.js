@@ -35,6 +35,13 @@ describe('OIDC login helpers', () => {
         await expect(getOidcConfig(api)).resolves.toEqual({ Enabled: false, PasswordLoginEnabled: true });
     });
 
+    it('does not assume password login when the server cannot be reached', async () => {
+        const api = createApi();
+        api.axiosInstance.get.mockRejectedValue(Object.assign(new Error('Bad gateway'), { response: { status: 502 } }));
+
+        await expect(getOidcConfig(api)).rejects.toThrow('Bad gateway');
+    });
+
     it('reads the login options', async () => {
         const api = createApi();
         api.axiosInstance.get.mockResolvedValue({ data: { Enabled: true, PasswordLoginEnabled: false, ProviderName: 'Charon' } });

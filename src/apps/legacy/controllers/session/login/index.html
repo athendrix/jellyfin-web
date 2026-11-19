@@ -28,7 +28,7 @@
             </div>
         </form>
 
-        <div class="visualLoginForm" style="text-align: center;">
+        <div class="visualLoginForm hide" style="text-align: center;">
             <h1 style="margin-top:1em;">${HeaderPleaseSignIn}</h1>
             <div id="divUsers" class="itemsContainer vertical-wrap centered"></div>
         </div>
@@ -38,7 +38,14 @@
                 <span class="btnOidcText"></span>
             </button>
 
-            <button is="emby-button" type="button" class="raised cancel block btnManual">
+            <div class="loginUnavailable hide" style="text-align: center; margin: 1em 0;">
+                <p>${MessageUnableToConnectToServer}</p>
+                <button is="emby-button" type="button" class="raised block btnRetryLogin">
+                    <span>${Retry}</span>
+                </button>
+            </div>
+
+            <button is="emby-button" type="button" class="raised cancel block btnManual hide">
                 <span>${ButtonManualLogin}</span>
             </button>
 
@@ -46,7 +53,7 @@
                 <span>${ButtonUseQuickConnect}</span>
             </button>
 
-            <button is="emby-button" type="button" class="raised cancel block btnForgotPassword">
+            <button is="emby-button" type="button" class="raised cancel block btnForgotPassword hide">
                 <span>${ButtonForgotPassword}</span>
             </button>
 

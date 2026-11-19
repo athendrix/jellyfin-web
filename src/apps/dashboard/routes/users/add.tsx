@@ -242,7 +242,7 @@ const UserNew = () => {
                         </div>
                     </div>
                     {/* Hidden rather than removed: the form reads the field when saving. */}
-                    <div className={oidcConfig && !oidcConfig.PasswordLoginEnabled ? 'inputContainer hide' : 'inputContainer'}>
+                    <div className={oidcConfig?.PasswordLoginEnabled === true ? 'inputContainer' : 'inputContainer hide'}>
                         <Input
                             type='password'
                             id='txtPassword'

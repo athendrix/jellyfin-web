@@ -346,14 +346,51 @@ export default function (view, params) {
             oidcButton.classList.add('hide');
         }
 
+        // The password parts of the page are hidden until the server says it uses passwords, so they never show
+        // on a server that signs users in with the identity provider and Quick Connect only.
+        view.querySelector('.btnForgotPassword').classList.toggle('hide', !options.PasswordLoginEnabled);
         if (!options.PasswordLoginEnabled) {
-            // Users sign in with the identity provider or Quick Connect only.
             view.querySelector('.manualLoginForm').classList.add('hide');
+            view.querySelector('.visualLoginForm').classList.add('hide');
             view.querySelector('#divUsers').innerHTML = '';
             view.querySelector('.btnManual').classList.add('hide');
-            view.querySelector('.btnForgotPassword').classList.add('hide');
         }
     }
+
+    function loadLoginOptions(api) {
+        loading.show();
+        view.querySelector('.loginUnavailable').classList.add('hide');
+
+        getOidcConfig(api).then(async options => {
+            if (await completeOidcLogin(api)) {
+                return;
+            }
+
+            applyLoginOptions(options);
+            if (!options.PasswordLoginEnabled) {
+                return;
+            }
+
+            const users = await queryClient.query(getPublicUsersQuery(api));
+            if (users.length) {
+                showVisualForm();
+                loadUserList(view, params.serverid, users);
+            } else {
+                view.querySelector('#txtManualName').value = '';
+                showManualForm(view, false, false);
+            }
+        }).catch(error => {
+            // Most likely the server is restarting. Do not guess how to log in: offer to try again.
+            console.error('[LoginPage] unable to load the login options', error);
+            view.querySelector('.loginUnavailable').classList.remove('hide');
+        }).finally(() => {
+            loading.hide();
+        });
+    }
+
+    view.querySelector('.btnRetryLogin').addEventListener('click', function () {
+        loadLoginOptions(ServerConnections.getApi(params.serverid));
+    });
 
     view.addEventListener('viewshow', function () {
         loading.show();
@@ -375,29 +412,7 @@ export default function (view, params) {
                 console.debug('Failed to get QuickConnect status');
             });
 
-        getOidcConfig(api).then(async options => {
-            if (await completeOidcLogin(api)) {
-                return;
-            }
-
-            applyLoginOptions(options);
-            if (!options.PasswordLoginEnabled) {
-                return;
-            }
-
-            const users = await queryClient.query(getPublicUsersQuery(api));
-            if (users.length) {
-                showVisualForm();
-                loadUserList(view, params.serverid, users);
-            } else {
-                view.querySelector('#txtManualName').value = '';
-                showManualForm(view, false, false);
-            }
-        }).catch(error => {
-            console.error('[LoginPage] unable to load the login options', error);
-        }).finally(() => {
-            loading.hide();
-        });
+        loadLoginOptions(api);
 
         queryClient.query(getBrandingOptionsQuery(api)).then(options => {
             const loginDisclaimer = view.querySelector('.loginDisclaimer');

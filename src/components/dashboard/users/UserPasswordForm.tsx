@@ -208,13 +208,14 @@ const PasswordForm: FunctionComponent<UserPasswordFormProps> = ({ user }) => {
  * The password form, or a note when the server has no passwords because users sign in with single sign-on.
  */
 const UserPasswordForm: FunctionComponent<UserPasswordFormProps> = ({ user }) => {
-    const { data: oidcConfig, isPending } = useOidcConfig();
+    const { data: oidcConfig, isPending, isError } = useOidcConfig();
 
-    if (isPending) {
+    // Shown only once the server has said it uses passwords: never while loading or when it cannot be reached.
+    if (isPending || isError) {
         return null;
     }
 
-    if (oidcConfig && !oidcConfig.PasswordLoginEnabled) {
+    if (!oidcConfig.PasswordLoginEnabled) {
         return (
             <div className='fieldDescription' style={{ margin: '0 auto 2em' }}>
                 {globalize.translate('MessagePasswordsDisabledOidc', oidcConfig.ProviderName || 'SSO')}

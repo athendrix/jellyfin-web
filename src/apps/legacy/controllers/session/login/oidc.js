@@ -20,6 +20,7 @@ const ErrorMessages = {
  * Gets how users log in to the server.
  * @param {import('@jellyfin/sdk').Api} api The API of the server.
  * @returns {Promise<{Enabled: boolean, PasswordLoginEnabled: boolean, ProviderName?: string}>} The login options.
+ * @throws When the server cannot be reached.
  */
 export async function getOidcConfig(api) {
     try {
@@ -30,9 +31,15 @@ export async function getOidcConfig(api) {
             ProviderName: typeof data?.ProviderName === 'string' ? data.ProviderName : undefined
         };
     } catch (error) {
-        // Servers without OpenID Connect support do not have the endpoint.
-        console.debug('[OIDC] login options unavailable, assuming password login', error);
-        return { Enabled: false, PasswordLoginEnabled: true };
+        // Only a server without OpenID Connect support, which does not have the endpoint, uses passwords.
+        // Any other failure (the server restarting, a network error) says nothing about how to log in.
+        const status = error?.response?.status ?? error?.status;
+        if (status === 404) {
+            console.debug('[OIDC] server without OpenID Connect support, using password login');
+            return { Enabled: false, PasswordLoginEnabled: true };
+        }
+
+        throw error;
     }
 }
 
