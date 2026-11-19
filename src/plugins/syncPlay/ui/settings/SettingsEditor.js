@@ -102,6 +102,7 @@ class SettingsEditor {
         context.querySelector('#txtMinDelaySpeedToSync').value = this.SyncPlay?.Manager.playbackCore.minDelaySpeedToSync;
         context.querySelector('#txtMaxDelaySpeedToSync').value = this.SyncPlay?.Manager.playbackCore.maxDelaySpeedToSync;
         context.querySelector('#txtSpeedToSyncDuration').value = this.SyncPlay?.Manager.playbackCore.speedToSyncDuration;
+        context.querySelector('#txtSpeedToSyncRate').value = Math.round((this.SyncPlay?.Manager.playbackCore.speedToSyncRate ?? 0.05) * 100);
         context.querySelector('#txtMinDelaySkipToSync').value = this.SyncPlay?.Manager.playbackCore.minDelaySkipToSync;
         context.querySelector('#chkSpeedToSync').checked = this.SyncPlay?.Manager.playbackCore.useSpeedToSync;
         context.querySelector('#chkSkipToSync').checked = this.SyncPlay?.Manager.playbackCore.useSkipToSync;
@@ -128,6 +129,7 @@ class SettingsEditor {
         const minDelaySpeedToSync = context.querySelector('#txtMinDelaySpeedToSync').value;
         const maxDelaySpeedToSync = context.querySelector('#txtMaxDelaySpeedToSync').value;
         const speedToSyncDuration = context.querySelector('#txtSpeedToSyncDuration').value;
+        const speedToSyncRatePercent = parseFloat(context.querySelector('#txtSpeedToSyncRate').value);
         const minDelaySkipToSync = context.querySelector('#txtMinDelaySkipToSync').value;
         const useSpeedToSync = context.querySelector('#chkSpeedToSync').checked;
         const useSkipToSync = context.querySelector('#chkSkipToSync').checked;
@@ -137,6 +139,9 @@ class SettingsEditor {
         setSetting('minDelaySpeedToSync', minDelaySpeedToSync);
         setSetting('maxDelaySpeedToSync', maxDelaySpeedToSync);
         setSetting('speedToSyncDuration', speedToSyncDuration);
+        if (isFinite(speedToSyncRatePercent)) {
+            setSetting('speedToSyncRate', speedToSyncRatePercent / 100);
+        }
         setSetting('minDelaySkipToSync', minDelaySkipToSync);
         setSetting('useSpeedToSync', useSpeedToSync);
         setSetting('useSkipToSync', useSkipToSync);

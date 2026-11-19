@@ -51,10 +51,14 @@ class PlaybackCore {
         this.minDelaySpeedToSync = toFloat(getSetting('minDelaySpeedToSync'), 60.0);
 
         // Maximum delay after which SkipToSync is used instead of SpeedToSync, in milliseconds.
-        this.maxDelaySpeedToSync = toFloat(getSetting('maxDelaySpeedToSync'), 3000.0);
+        this.maxDelaySpeedToSync = toFloat(getSetting('maxDelaySpeedToSync'), 2000.0);
 
-        // Time during which the playback is sped up, in milliseconds.
-        this.speedToSyncDuration = toFloat(getSetting('speedToSyncDuration'), 1000.0);
+        // Longest single SpeedToSync step, in milliseconds. The drift is measured again after each step.
+        this.speedToSyncDuration = toFloat(getSetting('speedToSyncDuration'), 5000.0);
+
+        // How much SpeedToSync changes the playback speed: a client that is behind plays at 1 + rate,
+        // a client that is ahead at 1 - rate. Kept small so the change is barely noticeable.
+        this.speedToSyncRate = Math.min(0.5, Math.max(0.01, toFloat(getSetting('speedToSyncRate'), 0.05)));
 
         // Minimum required delay for SkipToSync to kick in, in milliseconds.
         this.minDelaySkipToSync = toFloat(getSetting('minDelaySkipToSync'), 400.0);
@@ -526,7 +530,6 @@ class PlaybackCore {
     syncPlaybackTime(timeUpdateData) {
         // See comments in constants section for more info.
         const syncMethodThreshold = this.maxDelaySpeedToSync;
-        let speedToSyncTime = this.speedToSyncDuration;
 
         // Ignore sync when no player is active.
         if (!this.manager.isPlaybackActive()) {
@@ -570,22 +573,15 @@ class PlaybackCore {
 
         if (this.syncEnabled && this.enableSyncCorrection) {
             const absDiffMillis = Math.abs(diffMillis);
-            // TODO: SpeedToSync sounds bad on songs.
             // TODO: SpeedToSync is failing on Safari (Mojave); even if playbackRate is supported, some delay seems to exist.
-            // TODO: both SpeedToSync and SpeedToSync seem to have a hard time keeping up on Android Chrome as well.
             if (playerWrapper.hasPlaybackRate() && this.useSpeedToSync && absDiffMillis >= this.minDelaySpeedToSync && absDiffMillis < this.maxDelaySpeedToSync) {
-                // Fix negative speed when client is ahead of time more than speedToSyncTime.
-                const MinSpeed = 0.2;
-                if (diffMillis <= -speedToSyncTime * MinSpeed) {
-                    speedToSyncTime = Math.abs(diffMillis) / (1.0 - MinSpeed);
-                }
-
-                // SpeedToSync strategy.
-                const speed = 1 + diffMillis / speedToSyncTime;
-
-                if (speed <= 0) {
-                    console.error('SyncPlay error: speed should not be negative!', speed, diffMillis, speedToSyncTime);
-                }
+                // SpeedToSync strategy, for small drifts: nudge the speed slightly instead of jumping.
+                // A client that is behind (positive diff) plays a little faster, one that is ahead a little slower,
+                // for as long as it takes to close the gap. Long gaps are closed in steps, measuring the drift again
+                // after each one.
+                const rate = this.speedToSyncRate;
+                const speed = diffMillis > 0 ? 1 + rate : 1 - rate;
+                const speedToSyncTime = Math.min(absDiffMillis / rate, Math.max(this.speedToSyncDuration, 500));
 
                 playerWrapper.setPlaybackRate(speed);
                 this.syncEnabled = false;
@@ -598,9 +594,10 @@ class PlaybackCore {
                     this.manager.clearSyncIcon();
                 }, speedToSyncTime);
 
-                console.log('SyncPlay SpeedToSync', speed);
+                console.log('SyncPlay SpeedToSync', speed, 'for', speedToSyncTime, 'ms to recover', diffMillis, 'ms.');
             } else if (this.useSkipToSync && absDiffMillis >= this.minDelaySkipToSync) {
-                // SkipToSync strategy.
+                // SkipToSync strategy, for large drifts: jump to the group position, which every member
+                // estimates from the same server clock, so only the member that drifted has to jump.
                 this.localSeek(serverPositionTicks);
                 this.syncEnabled = false;
                 this.syncAttempts++;
