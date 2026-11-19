@@ -25,6 +25,7 @@ import baseAlert from 'components/alert';
 import { getDefaultBackgroundClass } from 'components/cardbuilder/utils/builder';
 import { queryClient } from '@/utils/query/queryClient';
 
+import { clearOidcParams, getOidcConfig, getOidcErrorMessage, redeemOidcCode, startOidcLogin } from './oidc';
 import './login.scss';
 
 const domPurify = createDOMPurify();
@@ -287,6 +288,64 @@ export default function (view, params) {
     view.querySelector('.btnSelectServer').addEventListener('click', function () {
         Dashboard.selectServer();
     });
+    view.querySelector('.btnOidc').addEventListener('click', function () {
+        loading.show();
+        startOidcLogin(ServerConnections.getApi(params.serverid));
+    });
+
+    // The one-time code of a completed login can only be redeemed once.
+    let oidcCodeHandled = false;
+
+    async function completeOidcLogin(api) {
+        if (params.oidcError) {
+            const error = params.oidcError;
+            clearOidcParams(params.serverid);
+            Dashboard.alert({
+                message: getOidcErrorMessage(error),
+                title: globalize.translate('HeaderError')
+            });
+            return false;
+        }
+
+        if (!params.oidcCode || oidcCodeHandled) {
+            return false;
+        }
+
+        oidcCodeHandled = true;
+        const code = params.oidcCode;
+        clearOidcParams(params.serverid);
+
+        try {
+            const result = await redeemOidcCode(api, code);
+            await onLoginSuccessful(result, getTargetUrl());
+            return true;
+        } catch (error) {
+            console.error('[OIDC] unable to complete the login', error);
+            Dashboard.alert({
+                message: getOidcErrorMessage('InvalidState'),
+                title: globalize.translate('HeaderError')
+            });
+            return false;
+        }
+    }
+
+    function applyLoginOptions(options) {
+        const oidcButton = view.querySelector('.btnOidc');
+        if (options.Enabled) {
+            view.querySelector('.btnOidcText').textContent = globalize.translate('ButtonSignInWithProvider', options.ProviderName || 'SSO');
+            oidcButton.classList.remove('hide');
+        } else {
+            oidcButton.classList.add('hide');
+        }
+
+        if (!options.PasswordLoginEnabled) {
+            // Users sign in with the identity provider or Quick Connect only.
+            view.querySelector('.manualLoginForm').classList.add('hide');
+            view.querySelector('#divUsers').innerHTML = '';
+            view.querySelector('.btnManual').classList.add('hide');
+            view.querySelector('.btnForgotPassword').classList.add('hide');
+        }
+    }
 
     view.addEventListener('viewshow', function () {
         loading.show();
@@ -308,7 +367,17 @@ export default function (view, params) {
                 console.debug('Failed to get QuickConnect status');
             });
 
-        queryClient.query(getPublicUsersQuery(api)).then(users => {
+        getOidcConfig(api).then(async options => {
+            if (await completeOidcLogin(api)) {
+                return;
+            }
+
+            applyLoginOptions(options);
+            if (!options.PasswordLoginEnabled) {
+                return;
+            }
+
+            const users = await queryClient.query(getPublicUsersQuery(api));
             if (users.length) {
                 showVisualForm();
                 loadUserList(view, params.serverid, users);
@@ -316,6 +385,8 @@ export default function (view, params) {
                 view.querySelector('#txtManualName').value = '';
                 showManualForm(view, false, false);
             }
+        }).catch(error => {
+            console.error('[LoginPage] unable to load the login options', error);
         }).finally(() => {
             loading.hide();
         });
