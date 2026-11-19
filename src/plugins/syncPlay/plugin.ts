@@ -8,6 +8,7 @@ import SyncPlay from './core';
 import SyncPlayNoActivePlayer from './ui/players/NoActivePlayer';
 import SyncPlayHtmlVideoPlayer from './ui/players/HtmlVideoPlayer';
 import SyncPlayHtmlAudioPlayer from './ui/players/HtmlAudioPlayer';
+import WaitStatusOverlay from './ui/WaitStatusOverlay';
 
 class SyncPlayPlugin implements Plugin {
     name: string;
@@ -15,6 +16,7 @@ class SyncPlayPlugin implements Plugin {
     type: string;
     priority: number;
     instance: typeof SyncPlay;
+    waitStatusOverlay?: WaitStatusOverlay;
 
     constructor() {
         this.name = 'SyncPlay Plugin';
@@ -39,6 +41,9 @@ class SyncPlayPlugin implements Plugin {
         Events.on(playbackManager, 'playerchange', (_, newPlayer) => {
             SyncPlay.Manager.onPlayerChange(newPlayer);
         });
+
+        // Show who the group is waiting for while members load.
+        this.waitStatusOverlay = new WaitStatusOverlay(SyncPlay.Manager);
 
         // Start SyncPlay.
         const apiClient = ServerConnections.currentApiClient();

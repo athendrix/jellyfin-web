@@ -8,6 +8,7 @@ import TimeSyncCore from './timeSync/TimeSyncCore';
 import PlaybackCore from './PlaybackCore';
 import QueueCore from './QueueCore';
 import Controller from './Controller';
+import LoadProgressReporter from './LoadProgressReporter';
 import toast from '../../../components/toast/toast';
 import globalize from '../../../lib/globalize';
 import Events from '../../../utils/events.ts';
@@ -28,6 +29,7 @@ class Manager {
         this.playbackCore = new PlaybackCore();
         this.queueCore = new QueueCore();
         this.controller = new Controller();
+        this.loadProgressReporter = new LoadProgressReporter();
 
         this.syncMethod = 'None'; // Used for stats.
 
@@ -37,6 +39,7 @@ class Manager {
         this.queuedCommand = null; // Queued playback command, applied when SyncPlay is ready.
         this.followingGroupPlayback = true; // Follow or ignore group playback.
         this.lastPlaybackCommand = null; // Last received playback command from server, tracks state of group.
+        this.waitStatus = null; // Last received wait status, tells who the group is waiting for.
 
         this.currentPlayer = null;
         this.playerWrapper = null;
@@ -58,6 +61,7 @@ class Manager {
         this.playbackCore.init(this);
         this.queueCore.init(this);
         this.controller.init(this);
+        this.loadProgressReporter.init(this);
 
         Events.on(this.timeSyncCore, 'time-sync-server-update', (event, timeOffset, ping) => {
             // Report ping back to server.
@@ -111,6 +115,22 @@ class Manager {
      */
     getController() {
         return this.controller;
+    }
+
+    /**
+     * Gets the load progress reporter.
+     * @returns {LoadProgressReporter} The load progress reporter.
+     */
+    getLoadProgressReporter() {
+        return this.loadProgressReporter;
+    }
+
+    /**
+     * Gets the last wait status received from the server.
+     * @returns {Object|null} The wait status.
+     */
+    getWaitStatus() {
+        return this.waitStatus;
     }
 
     /**
@@ -230,6 +250,13 @@ class Manager {
             case 'StateUpdate':
                 Events.trigger(this, 'group-state-update', [cmd.Data.State, cmd.Data.Reason]);
                 break;
+            case 'WaitStatus':
+                if (cmd.Data?.WaitingSince) {
+                    cmd.Data.WaitingSince = new Date(cmd.Data.WaitingSince);
+                }
+                this.waitStatus = cmd.Data;
+                Events.trigger(this, 'wait-status', [this.waitStatus]);
+                break;
             case 'GroupDoesNotExist':
                 toast(globalize.translate('MessageSyncPlayGroupDoesNotExist'));
                 break;
@@ -340,6 +367,7 @@ class Manager {
      */
     haltGroupPlayback(apiClient) {
         this.followingGroupPlayback = false;
+        this.loadProgressReporter.stop();
 
         apiClient.requestSyncPlaySetIgnoreWait({
             IgnoreWait: true
@@ -409,6 +437,10 @@ class Manager {
         this.lastPlaybackCommand = null;
         this.queuedCommand = null;
         this.playbackCore.syncEnabled = false;
+        this.loadProgressReporter.stop();
+        this.queueCore.cancelPendingReadyRequest();
+        this.waitStatus = null;
+        Events.trigger(this, 'wait-status', [null]);
         Events.trigger(this, 'enabled', [false]);
         this.playerWrapper.unbindFromPlayer();
 

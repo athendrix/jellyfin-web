@@ -66,7 +66,7 @@ class PlaybackCore {
         this.useSkipToSync = toBoolean(getSetting('useSkipToSync'), true);
 
         // Whether sync correction during playback is active.
-        this.enableSyncCorrection = toBoolean(getSetting('enableSyncCorrection'), false);
+        this.enableSyncCorrection = toBoolean(getSetting('enableSyncCorrection'), true);
     }
 
     /**
@@ -150,9 +150,12 @@ class PlaybackCore {
         };
 
         const apiClient = this.manager.getApiClient();
+        const reporter = this.manager.getLoadProgressReporter();
         if (isBuffering) {
             apiClient.requestSyncPlayBuffering(options);
+            reporter.start('Buffering');
         } else {
+            reporter.stop();
             apiClient.requestSyncPlayReady(options);
         }
     }
@@ -385,17 +388,31 @@ class PlaybackCore {
         const currentTime = new Date();
         const seekAtTimeLocal = this.timeSyncCore.remoteDateToLocal(seekAtTime);
 
-        const callback = () => {
-            this.localUnpause();
-            this.localSeek(positionTicks);
+        const reporter = this.manager.getLoadProgressReporter();
+        const seekToken = {};
+        this.pendingSeekToken = seekToken;
 
+        const waitForReady = () => {
             Helper.waitForEventOnce(this.manager, 'ready', Helper.WaitForEventDefaultTimeout).then(() => {
+                if (this.pendingSeekToken !== seekToken) return;
+                this.pendingSeekToken = null;
                 this.localPause();
                 this.sendBufferingRequest(false);
             }).catch((error) => {
-                console.error(`Timed out while waiting for 'ready' event! Seeking to ${positionTicks}.`, error);
+                if (this.pendingSeekToken !== seekToken) return;
+                // Still not ready: seek again and keep waiting. The group sees our progress meanwhile,
+                // and must not wait for a ready request that would otherwise never be sent.
+                console.warn(`Timed out while waiting for 'ready' event! Seeking to ${positionTicks} again.`, error);
                 this.localSeek(positionTicks);
+                waitForReady();
             });
+        };
+
+        const callback = () => {
+            reporter.start('Seeking');
+            this.localUnpause();
+            this.localSeek(positionTicks);
+            waitForReady();
         };
 
         if (seekAtTimeLocal > currentTime) {
@@ -413,6 +430,7 @@ class PlaybackCore {
      * Clears the current scheduled command.
      */
     clearScheduledCommand() {
+        this.pendingSeekToken = null;
         clearTimeout(this.scheduledCommandTimeout);
         clearTimeout(this.syncTimeout);
 

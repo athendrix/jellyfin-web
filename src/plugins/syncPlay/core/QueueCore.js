@@ -15,6 +15,7 @@ class QueueCore {
         this.manager = null;
         this.lastPlayQueueUpdate = null;
         this.playlist = [];
+        this.pendingReadyToken = null; // Identifies the latest wait for playback to start.
     }
 
     /**
@@ -166,8 +167,26 @@ class QueueCore {
      * @param {Object} apiClient The ApiClient.
      * @param {string} origin The origin of the wait call, used for debug.
      */
+    cancelPendingReadyRequest() {
+        this.pendingReadyToken = null;
+    }
+
     scheduleReadyRequestOnPlaybackStart(apiClient, origin) {
-        Helper.waitForEventOnce(this.manager, 'playbackstart', Helper.WaitForEventDefaultTimeout, ['playbackerror']).then(async () => {
+        // Opening the media can take a long time (starting a transcode, extracting subtitles, a slow link).
+        // Wait for as long as it takes: the progress reporter keeps the group informed, and the group
+        // only gives up on this client if it stops reporting.
+        const token = {};
+        this.pendingReadyToken = token;
+        const reporter = this.manager.getLoadProgressReporter();
+        reporter.start('Loading');
+
+        Helper.waitForEventOnce(this.manager, 'playbackstart', undefined, ['playbackerror']).then(async () => {
+            if (this.pendingReadyToken !== token) {
+                console.debug('SyncPlay scheduleReadyRequestOnPlaybackStart: superseded, ignoring playback start.', origin);
+                return;
+            }
+            this.pendingReadyToken = null;
+
             console.debug('SyncPlay scheduleReadyRequestOnPlaybackStart: local pause and notify server.');
             const playerWrapper = this.manager.getPlayerWrapper();
             playerWrapper.localPause();
@@ -180,6 +199,7 @@ class QueueCore {
             const currentPositionTicks = Math.round(currentPosition * Helper.TicksPerMillisecond);
             const isPlaying = playerWrapper.isPlaying();
 
+            reporter.stop();
             apiClient.requestSyncPlayReady({
                 When: now.toISOString(),
                 PositionTicks: currentPositionTicks,
@@ -187,6 +207,12 @@ class QueueCore {
                 PlaylistItemId: this.getCurrentPlaylistItemId()
             });
         }).catch((error) => {
+            if (this.pendingReadyToken !== token) {
+                return;
+            }
+            this.pendingReadyToken = null;
+            reporter.stop();
+
             console.error('Error while waiting for `playbackstart` event!', origin, error);
             if (!this.manager.isSyncPlayEnabled()) {
                 toast(globalize.translate('MessageSyncPlayErrorMedia'));
@@ -238,6 +264,10 @@ class QueueCore {
         }).catch((error) => {
             console.error(error);
             toast(globalize.translate('MessageSyncPlayErrorMedia'));
+
+            // Playback is not going to start, so stop holding up the group.
+            this.cancelPendingReadyRequest();
+            this.manager.haltGroupPlayback(apiClient);
         });
     }
 
