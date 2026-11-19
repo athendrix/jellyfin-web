@@ -351,7 +351,7 @@ function getMediaInfoItem(m, cssClass) {
         mediaInfoText = m.text;
         cssClass += ` ${m.cssClass}`;
     }
-    return `<div class="${cssClass}">${mediaInfoText}</div>`;
+    return `<div class="${cssClass}">${escapeHtml(String(mediaInfoText))}</div>`;
 }
 
 function getStarIconsHtml(item) {

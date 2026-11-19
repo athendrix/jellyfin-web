@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { UNTRUSTED_HTML } from 'utils/sanitize';
 import debounce from 'lodash-es/debounce';
 import Screenfull from 'screenfull';
 
@@ -1713,7 +1714,7 @@ export class HtmlVideoPlayer {
 
                 if (selectedTrackEvent?.Text) {
                     subtitleTextElement.innerHTML = DOMPurify.sanitize(
-                        normalizeTrackEventText(selectedTrackEvent.Text, true));
+                        normalizeTrackEventText(selectedTrackEvent.Text, true), UNTRUSTED_HTML);
                     subtitleTextElement.classList.remove('hide');
                 } else {
                     subtitleTextElement.classList.add('hide');

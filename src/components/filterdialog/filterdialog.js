@@ -12,6 +12,7 @@ import './style.scss';
 import template from './filterdialog.template.html';
 import { stopMultiSelect } from '../../components/multiSelect/multiSelect';
 import { getFilterStatus } from 'components/filterdialog/filterIndicator';
+import escapeHtml from 'escape-html';
 
 function merge(resultItems, queryItems, delimiter) {
     if (!queryItems) {
@@ -34,8 +35,8 @@ function renderOptions(context, selector, cssClass, items, isCheckedFn) {
         let itemHtml = '';
         const checkedHtml = isCheckedFn(filter) ? 'checked' : '';
         itemHtml += '<label>';
-        itemHtml += `<input is="emby-checkbox" type="checkbox" ${checkedHtml} data-filter="${filter}" class="${cssClass}"/>`;
-        itemHtml += `<span>${filter}</span>`;
+        itemHtml += `<input is="emby-checkbox" type="checkbox" ${checkedHtml} data-filter="${escapeHtml(filter)}" class="${cssClass}"/>`;
+        itemHtml += `<span>${escapeHtml(filter)}</span>`;
         itemHtml += '</label>';
         return itemHtml;
     }).join('');

@@ -1,3 +1,5 @@
+import { isWebUrl } from 'utils/safeUrl';
+
 // TODO: This seems like a good candidate for deprecation
 export default {
     enableFullscreen: function() {
@@ -21,6 +23,12 @@ export default {
         }
     },
     openUrl: function(url: string, target?: string) {
+        // Web links only: javascript:, file: and other schemes from metadata must not be opened.
+        if (!isWebUrl(url)) {
+            console.warn('[shell] refusing to open a non-web URL');
+            return;
+        }
+
         if (window.NativeShell?.openUrl) {
             window.NativeShell.openUrl(url, target);
         } else {

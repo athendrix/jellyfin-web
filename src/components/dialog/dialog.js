@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { UNTRUSTED_HTML } from 'utils/sanitize';
 import escapeHtml from 'escape-html';
 import dialogHelper from '../dialogHelper/dialogHelper';
 import dom from '../../utils/dom';
@@ -53,7 +54,8 @@ function showDialog(options = { dialogOptions: {}, buttons: [] }) {
     }
 
     const displayText = options.html || options.text || '';
-    dlg.querySelector('.text').innerHTML = DOMPurify.sanitize(displayText);
+    // Plain text may contain item names: only HTML the caller passed as html gets the default sanitizer.
+    dlg.querySelector('.text').innerHTML = DOMPurify.sanitize(displayText, options.html ? {} : UNTRUSTED_HTML);
 
     if (!displayText) {
         dlg.querySelector('.dialogContentInner').classList.add('hide');

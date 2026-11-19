@@ -15,6 +15,8 @@ import '../../elements/emby-button/emby-button';
 import '../formdialog.scss';
 import '../cardbuilder/card.scss';
 import template from './imageDownloader.template.html';
+import escapeHtml from 'escape-html';
+import { isWebUrl } from 'utils/safeUrl';
 
 const enableFocusTransform = !browser.slow && !browser.edge;
 
@@ -201,7 +203,7 @@ function getRemoteImageHtml(image, imageType) {
         html += '<div class="' + cssClass + '"';
     }
 
-    html += ' data-imageprovider="' + image.ProviderName + '" data-imageurl="' + image.Url + '" data-imagetype="' + image.Type + '"';
+    html += ' data-imageprovider="' + escapeHtml(image.ProviderName) + '" data-imageurl="' + escapeHtml(image.Url) + '" data-imagetype="' + escapeHtml(image.Type) + '"';
 
     html += '>';
 
@@ -211,9 +213,10 @@ function getRemoteImageHtml(image, imageType) {
     html += '<div class="cardContent">';
 
     if (layoutManager.tv || !appHost.supports(AppFeature.ExternalLinks)) {
-        html += '<div class="cardImageContainer lazy" data-src="' + image.Url + '" style="background-position:center center;background-size:contain;"></div>';
+        html += '<div class="cardImageContainer lazy" data-src="' + escapeHtml(image.Url) + '" style="background-position:center center;background-size:contain;"></div>';
     } else {
-        html += '<a is="emby-linkbutton" target="_blank" href="' + image.Url + '" class="button-link cardImageContainer lazy" data-src="' + image.Url + '" style="background-position:center center;background-size:contain"></a>';
+        const href = isWebUrl(image.Url) ? escapeHtml(image.Url) : '#';
+        html += '<a is="emby-linkbutton" target="_blank" href="' + href + '" class="button-link cardImageContainer lazy" data-src="' + escapeHtml(image.Url) + '" style="background-position:center center;background-size:contain"></a>';
     }
 
     html += '</div>';
@@ -222,7 +225,7 @@ function getRemoteImageHtml(image, imageType) {
     // begin footer
     html += '<div class="cardFooter visualCardBox-cardFooter">';
 
-    html += '<div class="cardText cardTextCentered">' + image.ProviderName + '</div>';
+    html += '<div class="cardText cardTextCentered">' + escapeHtml(image.ProviderName) + '</div>';
 
     if (image.Width || image.Height || image.Language) {
         html += '<div class="cardText cardText-secondary cardTextCentered">';
@@ -231,10 +234,10 @@ function getRemoteImageHtml(image, imageType) {
             html += image.Width + ' x ' + image.Height;
 
             if (image.Language) {
-                html += ' • ' + image.Language;
+                html += ' • ' + escapeHtml(image.Language);
             }
         } else if (image.Language) {
-            html += image.Language;
+            html += escapeHtml(image.Language);
         }
 
         html += '</div>';

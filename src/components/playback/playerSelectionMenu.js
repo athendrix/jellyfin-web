@@ -12,6 +12,7 @@ import '../../elements/emby-checkbox/emby-checkbox';
 import '../../elements/emby-button/emby-button';
 import dialog from '../dialog/dialog';
 import dialogHelper from '../dialogHelper/dialogHelper';
+import escapeHtml from 'escape-html';
 
 function getTargetSecondaryText(target) {
     if (target.user) {
@@ -186,7 +187,7 @@ function showActivePlayerMenuInternal(playerInfo) {
 
     html += '<div class="promptDialogContent" style="padding:1.5em;">';
     html += '<h2 style="margin-top:.5em;">';
-    html += currentDeviceName;
+    html += escapeHtml(currentDeviceName);
     html += '</h2>';
 
     html += '<div>';

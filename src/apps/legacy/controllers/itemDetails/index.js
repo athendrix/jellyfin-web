@@ -7,6 +7,7 @@ import { getVideoApi } from '@jellyfin/sdk/lib/utils/api/video-api';
 import { OutboundWebSocketMessageType } from '@jellyfin/sdk/lib/websocket';
 import { intervalToDuration } from 'date-fns';
 import DOMPurify from 'dompurify';
+import { UNTRUSTED_HTML } from 'utils/sanitize';
 import escapeHtml from 'escape-html';
 import markdownIt from 'markdown-it';
 import isEqual from 'lodash-es/isEqual';
@@ -53,6 +54,7 @@ import 'elements/emby-scroller/emby-scroller';
 import 'elements/emby-select/emby-select';
 
 import 'styles/scrollstyles.scss';
+import { isWebUrl } from 'utils/safeUrl';
 
 /** Item types that use a list view for their children. */
 const LIST_VIEW_TYPES = [
@@ -733,7 +735,9 @@ function renderLinks(page, item) {
     if (!layoutManager.tv && item.HomePageUrl) {
         try {
             const parsedUrl = new URL(item.HomePageUrl);
-            links.push(`<a is="emby-linkbutton" class="button-link" href="${parsedUrl.href}" target="_blank">${globalize.translate('ButtonWebsite')}</a>`);
+            if (isWebUrl(parsedUrl)) {
+                links.push(`<a is="emby-linkbutton" class="button-link" href="${escapeHtml(parsedUrl.href)}" target="_blank">${globalize.translate('ButtonWebsite')}</a>`);
+            }
         } catch {
             console.error('[renderLinks] Failed to parse home page URL', item.HomePageUrl);
         }
@@ -743,7 +747,9 @@ function renderLinks(page, item) {
         for (const url of item.ExternalUrls) {
             try {
                 const parsedUrl = new URL(url.Url);
-                links.push(`<a is="emby-linkbutton" class="button-link" href="${parsedUrl.href}" target="_blank">${escapeHtml(url.Name)}</a>`);
+                if (isWebUrl(parsedUrl)) {
+                    links.push(`<a is="emby-linkbutton" class="button-link" href="${escapeHtml(parsedUrl.href)}" target="_blank">${escapeHtml(url.Name)}</a>`);
+                }
             } catch {
                 console.error('[renderLinks] Failed to parse external URL', url.Url);
             }
@@ -932,7 +938,7 @@ function renderOverview(page, item) {
 
     if (overviewElements.length > 0) {
         // eslint-disable-next-line sonarjs/disabled-auto-escaping
-        const overview = DOMPurify.sanitize(markdownIt({ html: true }).render(item.Overview || ''));
+        const overview = DOMPurify.sanitize(markdownIt({ html: true }).render(item.Overview || ''), UNTRUSTED_HTML);
 
         if (overview) {
             for (const overviewElemnt of overviewElements) {
@@ -1307,7 +1313,7 @@ function renderSeriesAirTime(page, item) {
         }
     }
     if (item.AirTime) {
-        html += ' at ' + item.AirTime;
+        html += ' at ' + escapeHtml(item.AirTime);
     }
     if (html) {
         html = (item.Status == 'Ended' ? 'Aired ' : 'Airs ') + html;

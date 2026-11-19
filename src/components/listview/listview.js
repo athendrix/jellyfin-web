@@ -5,6 +5,7 @@
  */
 
 import DOMPurify from 'dompurify';
+import { UNTRUSTED_HTML } from 'utils/sanitize';
 import escapeHtml from 'escape-html';
 import markdownIt from 'markdown-it';
 
@@ -197,7 +198,7 @@ export function getListViewHtml(options) {
 
         const safeOverviewHtml = item.Overview ?
             // eslint-disable-next-line sonarjs/disabled-auto-escaping
-            DOMPurify.sanitize(markdownIt({ html: true }).render(item.Overview)) :
+            DOMPurify.sanitize(markdownIt({ html: true }).render(item.Overview), UNTRUSTED_HTML) :
             '';
 
         let html = '';

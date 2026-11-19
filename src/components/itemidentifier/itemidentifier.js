@@ -20,6 +20,7 @@ import toast from '../toast/toast';
 import template from './itemidentifier.template.html';
 import datetime from '../../scripts/datetime';
 import { remoteSearch } from '@/utils/remoteSearch';
+import { encodeCssUrl } from 'utils/safeUrl';
 
 const enableFocusTransform = !browser.slow && !browser.edge;
 
@@ -158,7 +159,7 @@ function showIdentifyOptions(page, identifyResult) {
     let resultHtml = lines.join('<br/>');
 
     if (identifyResult.ImageUrl) {
-        resultHtml = `<div style="display:flex;align-items:center;"><img src="${identifyResult.ImageUrl}" style="max-height:240px;" /><div style="margin-left:1em;">${resultHtml}</div>`;
+        resultHtml = `<div style="display:flex;align-items:center;"><img src="${escapeHtml(identifyResult.ImageUrl)}" style="max-height:240px;" /><div style="margin-left:1em;">${resultHtml}</div>`;
     }
 
     page.querySelector('.selectedSearchResult').innerHTML = resultHtml;
@@ -203,7 +204,7 @@ function getSearchResultHtml(result, index) {
     html += '<div class="cardContent searchImage">';
 
     if (result.ImageUrl) {
-        html += `<div class="cardImageContainer coveredImage" style="background-image:url('${result.ImageUrl}');"></div>`;
+        html += `<div class="cardImageContainer coveredImage" style="background-image:url('${escapeHtml(encodeCssUrl(result.ImageUrl))}');"></div>`;
     } else {
         html += `<div class="cardImageContainer coveredImage defaultCardBackground defaultCardBackground1"><div class="cardText cardCenteredText">${escapeHtml(result.Name)}</div></div>`;
     }
