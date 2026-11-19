@@ -25,7 +25,7 @@ import baseAlert from 'components/alert';
 import { getDefaultBackgroundClass } from 'components/cardbuilder/utils/builder';
 import { queryClient } from '@/utils/query/queryClient';
 
-import { clearOidcParams, getOidcConfig, getOidcErrorMessage, redeemOidcCode, startOidcLogin } from './oidc';
+import { clearOidcParams, consumePendingLogin, getOidcConfig, getOidcErrorMessage, redeemOidcCode, startOidcLogin } from './oidc';
 import './login.scss';
 
 const domPurify = createDOMPurify();
@@ -299,6 +299,7 @@ export default function (view, params) {
     async function completeOidcLogin(api) {
         if (params.oidcError) {
             const error = params.oidcError;
+            consumePendingLogin();
             clearOidcParams(params.serverid);
             Dashboard.alert({
                 message: getOidcErrorMessage(error),
@@ -314,6 +315,13 @@ export default function (view, params) {
         oidcCodeHandled = true;
         const code = params.oidcCode;
         clearOidcParams(params.serverid);
+
+        // Only accept the result of a login started from this tab. Otherwise a link carrying somebody else's
+        // login result could sign this browser in to their account.
+        if (!consumePendingLogin()) {
+            console.warn('[OIDC] ignoring a login result this tab did not ask for');
+            return false;
+        }
 
         try {
             const result = await redeemOidcCode(api, code);

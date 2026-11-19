@@ -5,6 +5,8 @@
 
 import globalize from 'lib/globalize';
 
+const PendingLoginKey = 'oidcLoginPending';
+
 const ErrorMessages = {
     ProviderError: 'OidcErrorProviderError',
     ProviderUnavailable: 'OidcErrorProviderUnavailable',
@@ -46,9 +48,31 @@ export function startOidcLogin(api) {
         version: api.clientInfo.version
     });
 
+    // Remember that this tab started a login, so a login result it did not ask for is not accepted.
+    try {
+        window.sessionStorage.setItem(PendingLoginKey, String(Date.now()));
+    } catch (error) {
+        console.debug('[OIDC] unable to remember the pending login', error);
+    }
+
     // A full-page navigation, not a popup: the desktop app does not support popups, and the server binds the
     // login to this browser with a cookie.
     window.location.href = url;
+}
+
+/**
+ * Checks, and forgets, that this tab started a login.
+ * @returns {boolean} _true_ if this tab started a login in the last 15 minutes.
+ */
+export function consumePendingLogin() {
+    try {
+        const startedAt = Number(window.sessionStorage.getItem(PendingLoginKey));
+        window.sessionStorage.removeItem(PendingLoginKey);
+        return startedAt > 0 && Date.now() - startedAt < 15 * 60 * 1000;
+    } catch (error) {
+        console.debug('[OIDC] unable to read the pending login', error);
+        return false;
+    }
 }
 
 /**

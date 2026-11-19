@@ -4,7 +4,7 @@ vi.mock('lib/globalize', () => ({
     default: { translate: (key) => key }
 }));
 
-import { getOidcConfig, getOidcErrorMessage, redeemOidcCode, startOidcLogin } from './oidc';
+import { consumePendingLogin, getOidcConfig, getOidcErrorMessage, redeemOidcCode, startOidcLogin } from './oidc';
 
 function createApi(overrides = {}) {
     return {
@@ -52,6 +52,17 @@ describe('OIDC login helpers', () => {
         expect(url.pathname).toBe('/Oidc/Start');
         expect(url.searchParams.get('deviceId')).toBe('device 1');
         expect(url.searchParams.get('client')).toBe('Jellyfin Web');
+    });
+
+    it('accepts a login result only once, and only after starting a login', () => {
+        Object.defineProperty(window, 'location', { configurable: true, value: { href: '' } });
+        window.sessionStorage.clear();
+
+        expect(consumePendingLogin()).toBe(false);
+
+        startOidcLogin(createApi());
+        expect(consumePendingLogin()).toBe(true);
+        expect(consumePendingLogin()).toBe(false);
     });
 
     it('redeems the code with the device authorization header', async () => {
