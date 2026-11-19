@@ -18,6 +18,8 @@ import { useUpdateUser } from 'apps/dashboard/features/users/api/useUpdateUser';
 import { useUpdateUserPolicy } from 'apps/dashboard/features/users/api/useUpdateUserPolicy';
 import { useNetworkConfig } from 'apps/dashboard/features/users/api/useNetworkConfig';
 import Toast from 'apps/dashboard/components/Toast';
+import { useOidcManagedUser } from '../api/useOidcManagedUser';
+import { useOidcConfig } from 'hooks/useOidcConfig';
 
 interface ProfileProps {
     userDto: UserDto;
@@ -207,6 +209,23 @@ const Profile = ({ userDto }: ProfileProps) => {
     useEffect(() => {
         loadUser();
     }, [ loadUser ]);
+
+    // Settings that come from the identity provider are shown but cannot be changed here (the server keeps them too).
+    const { data: managed } = useOidcManagedUser(userDto.Id);
+    const { data: oidcConfig } = useOidcConfig();
+    useEffect(() => {
+        const page = element.current;
+        if (!page || !managed) return;
+
+        const note = globalize.translate('LabelManagedByProvider', oidcConfig?.ProviderName || 'SSO');
+        const lock = (input: HTMLInputElement | null, locked: boolean) => {
+            if (!input) return;
+            input.disabled = locked;
+            input.title = locked ? note : '';
+        };
+        lock(page.querySelector('#txtUserName'), managed.Name);
+        lock(page.querySelector('.chkIsAdmin'), managed.Administrator);
+    }, [ managed, oidcConfig, userDto, loadUser ]);
 
     useEffect(() => {
         const page = element.current;

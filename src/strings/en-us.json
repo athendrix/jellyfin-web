@@ -866,6 +866,7 @@
     "LabelMoviePrefixHelp": "If a prefix is applied to movie titles, enter it here so the server can handle it properly.",
     "LabelMovieRecordingPath": "Movie recording path",
     "LabelName": "Name",
+    "LabelManagedByProvider": "Managed by {0}",
     "LabelNewName": "New name",
     "LabelNewPassword": "New password",
     "LabelNewPasswordConfirm": "New password confirm",

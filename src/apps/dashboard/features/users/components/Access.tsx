@@ -12,6 +12,8 @@ import { getUserApi } from '@jellyfin/sdk/lib/utils/api/user-api';
 import { getLibraryApi } from '@jellyfin/sdk/lib/utils/api/library-api';
 import { getChannelApi } from '@jellyfin/sdk/lib/utils/api/channel-api';
 import { getDeviceApi } from '@jellyfin/sdk/lib/utils/api/device-api';
+import { useOidcManagedUser } from '../api/useOidcManagedUser';
+import { useOidcConfig } from 'hooks/useOidcConfig';
 
 interface AccessProps {
     userId: string;
@@ -267,6 +269,26 @@ const Access = ({ userId }: AccessProps) => {
 
         (page.querySelector('.userLibraryAccessForm') as HTMLFormElement).addEventListener('submit', onSubmit);
     }, [api, userId, loadData]);
+
+    // Library access that comes from the identity provider's groups is shown but cannot be changed here.
+    const { data: managed } = useOidcManagedUser(userId);
+    const { data: oidcConfig } = useOidcConfig();
+    useEffect(() => {
+        const page = element.current;
+        if (!page || !managed?.Libraries) return;
+
+        const note = globalize.translate('LabelManagedByProvider', oidcConfig?.ProviderName || 'SSO');
+        const inputs = [
+            page.querySelector('.chkEnableAllFolders'),
+            ...Array.from(page.querySelectorAll('.folderAccessListContainer input'))
+        ] as (HTMLInputElement | null)[];
+        for (const input of inputs) {
+            if (input) {
+                input.disabled = true;
+                input.title = note;
+            }
+        }
+    }, [ managed, oidcConfig, mediaFoldersItems ]);
 
     return (
         <div ref={element}>
