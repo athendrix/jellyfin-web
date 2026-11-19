@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../../lib/globalize', () => ({
+vi.mock('lib/globalize', () => ({
     default: {
         translate: (key, ...args) => [key, ...args].join(':')
     }
 }));
 
-import Events from '../../../utils/events.ts';
-import WaitStatusOverlay from './WaitStatusOverlay';
+import Events from 'utils/events';
+import WaitStatusOverlay from 'plugins/syncPlay/ui/WaitStatusOverlay';
 
 function createManager() {
     return {

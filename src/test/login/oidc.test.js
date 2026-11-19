@@ -4,7 +4,7 @@ vi.mock('lib/globalize', () => ({
     default: { translate: (key) => key }
 }));
 
-import { consumePendingLogin, getOidcConfig, getOidcErrorMessage, redeemOidcCode, startOidcLogin } from './oidc';
+import { consumePendingLogin, getOidcConfig, getOidcErrorMessage, redeemOidcCode, startOidcLogin } from 'apps/legacy/controllers/session/login/oidc';
 
 function createApi(overrides = {}) {
     return {
